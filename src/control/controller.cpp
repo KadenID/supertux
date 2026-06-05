@@ -41,6 +41,8 @@ const char* g_control_names[] = {
   "peek-right",
   "peek-up",
   "peek-down",
+  "scale-up",
+  "scale-down",
   nullptr
 };
 

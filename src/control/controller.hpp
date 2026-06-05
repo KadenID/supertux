@@ -46,6 +46,9 @@ enum class Control {
   PEEK_UP,
   PEEK_DOWN,
 
+  SCALE_UP,
+  SCALE_DOWN,
+
   CONTROLCOUNT
 };
 

@@ -650,6 +650,8 @@ private:
   bool m_is_slidejump_falling;
   bool m_was_crawling_before_slide;
 
+  float m_scale;
+
 private:
   Player(const Player&) = delete;
   Player& operator=(const Player&) = delete;

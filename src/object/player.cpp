@@ -248,7 +248,8 @@ Player::Player(PlayerStatus& player_status, const std::string& name_, int player
   m_target_sliding_angle(0.0f),
   m_sliding_rotation_timer(),
   m_is_slidejump_falling(false),
-  m_was_crawling_before_slide(false)
+  m_was_crawling_before_slide(false),
+  m_scale(1.0f)
 {
   m_name = name_;
   m_idle_timer.start(static_cast<float>(TIME_UNTIL_IDLE) / 1000.0f);
@@ -340,12 +341,13 @@ Player::move_to_sector(Sector& other)
 bool
 Player::adjust_height(float new_height, float bottom_offset)
 {
+  float scaled_height = new_height * m_scale;
   Rectf bbox2 = m_col.m_bbox;
-  bbox2.move(Vector(0, m_col.m_bbox.get_height() - new_height - bottom_offset));
-  bbox2.set_height(new_height);
+  bbox2.move(Vector(0, m_col.m_bbox.get_height() - scaled_height - bottom_offset));
+  bbox2.set_height(scaled_height);
 
 
-  if (new_height > m_col.m_bbox.get_height()) {
+  if (scaled_height > m_col.m_bbox.get_height()) {
     //Rectf additional_space = bbox2;
     //additional_space.set_height(new_height - m_col.m_bbox.get_height());
     if (!Sector::get().is_free_of_statics(bbox2, this, true))
@@ -695,10 +697,10 @@ Player::update(float dt_sec)
   // extend/shrink tux collision rectangle so that we fall through/walk over 1
   // tile holes
   if (fabsf(m_physic.get_velocity_x()) > MAX_WALK_XM) {
-    m_col.set_width(RUNNING_TUX_WIDTH);
+    m_col.set_width(RUNNING_TUX_WIDTH * m_scale);
   }
   else {
-    m_col.set_width(TUX_WIDTH);
+    m_col.set_width(TUX_WIDTH * m_scale);
   }
 
   // on downward slopes, adjust vertical velocity so tux walks smoothly down
@@ -1797,6 +1799,17 @@ Player::handle_input()
     adjust_height(DUCKED_TUX_HEIGHT);
     slide();
   }
+
+  if (m_controller->pressed(Control::SCALE_UP)) {
+    m_scale += 0.1f;
+    if (m_scale > 2.0f) m_scale = 2.0f;
+    adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+  }
+  if (m_controller->pressed(Control::SCALE_DOWN)) {
+    m_scale -= 0.1f;
+    if (m_scale < 0.5f) m_scale = 0.5f;
+    adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+  }
 }
 
 void
@@ -2314,9 +2327,6 @@ Player::draw(DrawingContext& context)
   }
   */
 
-  // Because the camera also tracks Tux, to avoid perceived jitter the position should be
-  // projected forward according to the time since the last frame. This forward projection
-  // may overshoot slightly, but Tux should never move fast enough that this is perceivable.
   // (While this could be done for all objects, it is most important here as the camera often
   // tracks Tux.) Note `context.get_time_offset()` is only nonzero if frame prediction is on.
   Vector draw_pos = get_pos() + context.get_time_offset() * m_physic.get_velocity();
@@ -2326,10 +2336,19 @@ Player::draw(DrawingContext& context)
   {
   }  // don't draw Tux
 
-  else if (m_dying)
-    m_sprite->draw(context.color(), draw_pos, Sector::get().get_foremost_opaque_layer() + 1);
-  else
-    m_sprite->draw(context.color(), draw_pos, LAYER_OBJECTS + 1);
+  else {
+    context.push_transform();
+    Vector translation = context.get_translation();
+    context.set_translation(draw_pos - (draw_pos - translation) / m_scale);
+    context.scale(m_scale);
+
+    if (m_dying)
+      m_sprite->draw(context.color(), draw_pos, Sector::get().get_foremost_opaque_layer() + 1);
+    else
+      m_sprite->draw(context.color(), draw_pos, LAYER_OBJECTS + 1);
+
+    context.pop_transform();
+  }
 
   //TODO: Replace recoloring with proper costumes
   Color power_color = (get_bonus() == BONUS_FIRE ? Color(1.f, 0.7f, 0.5f) :
