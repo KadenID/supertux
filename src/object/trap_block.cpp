@@ -57,8 +57,8 @@ TrapBlock::spawn_random_badguy()
   // Filter out ONLY the specified badguys
   m_available_badguys.clear();
   for (const auto& name : all_badguys) {
-    if (name == "stalactite" || name == "crusher" || name == "mrtree" ||
-        name == "corrupted_granito_big" || name == "root_sapling" || 
+    if (name == "stalactite" || name == "crusher" || name == "mrtree" || name == "dispenser" ||
+        name == "corrupted_granito_big" || name == "root_sapling" || name == "owl" ||
         name == "skydive" || name == "tarantula" || name == "yeti" || 
         name == "ghosttree" || name == "yeti_stalactite" || name == "granito_giant") {
       continue;
