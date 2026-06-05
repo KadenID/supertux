@@ -233,6 +233,8 @@ public:
 
   std::vector<Player*> get_players() const;
 
+  std::vector<std::string> get_spawnable_badguys_list();
+
   Vector get_spawn_point_position(const std::string& spawnpoint) const;
 
 private:

@@ -17,6 +17,7 @@
 #include "supertux/sector.hpp"
 
 #include <algorithm>
+#include <set>
 
 #include <physfs.h>
 #include <simplesquirrel/class.hpp>
@@ -874,6 +875,16 @@ Sector::get_players() const
   return m_level.get_players();
 }
 
+
+std::vector<std::string>
+Sector::get_spawnable_badguys_list()
+{
+  std::set<std::string> names;
+  for (auto& obj : get_objects_by_type<BadGuy>()) {
+    names.insert(obj.get_class_name());
+  }
+  return std::vector<std::string>(names.begin(), names.end());
+}
 
 void
 Sector::register_class(ssq::VM& vm)

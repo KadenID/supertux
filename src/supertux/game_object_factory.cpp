@@ -137,6 +137,7 @@
 #include "object/tilemap.hpp"
 #include "object/torch.hpp"
 #include "object/trampoline.hpp"
+#include "object/trap_block.hpp"
 #include "object/unstable_tile.hpp"
 #include "object/weak_block.hpp"
 #include "object/wind.hpp"
@@ -303,6 +304,7 @@ GameObjectFactory::init_factories()
   add_factory<Torch>("torch");
   add_factory<Trampoline>("trampoline", OBJ_PARAM_PORTABLE | OBJ_PARAM_DISPENSABLE);
   add_factory<RustyTrampoline>("rustytrampoline", OBJ_PARAM_PORTABLE | OBJ_PARAM_DISPENSABLE);
+  add_factory<TrapBlock>("trapblock", OBJ_PARAM_DISPENSABLE);
   add_factory<UnstableTile>("unstable_tile");
   add_factory<WeakBlock>("weak_block", OBJ_PARAM_DISPENSABLE);
   add_factory<Wind>("wind");

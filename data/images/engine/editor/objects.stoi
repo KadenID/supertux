@@ -190,6 +190,9 @@
     (class "bonusblock")
     (icon "images/objects/bonus_block/full-0.png"))
   (object
+    (class "trapblock")
+    (icon "images/objects/bonus_block/full-0.png"))
+  (object
     (class "infoblock")
     (icon "images/objects/bonus_block/infoblock-0.png"))
   (object
