@@ -1184,9 +1184,10 @@ Player::swim(float pointx, float pointy, bool boost)
 void
 Player::apply_friction()
 {
+  float scale_factor = get_scale_factor();
   bool is_on_ground = on_ground();
   float velx = m_physic.get_velocity_x();
-  if (is_on_ground && (fabsf(velx) < (m_stone ? 5.f : WALK_SPEED))) {
+  if (is_on_ground && (fabsf(velx) < (m_stone ? 5.f : WALK_SPEED * scale_factor))) {
     m_physic.set_velocity_x(0);
     m_physic.set_acceleration_x(0);
     return;
@@ -1207,6 +1208,7 @@ Player::apply_friction()
 void
 Player::handle_horizontal_input()
 {
+  float scale_factor = get_scale_factor();
   float vx = m_physic.get_velocity_x();
   float vy = m_physic.get_velocity_y();
   float ax = 0;
@@ -1245,16 +1247,16 @@ Player::handle_horizontal_input()
       m_duck = true;
   }
 
-  if (m_crawl && on_ground() && std::abs(m_physic.get_velocity_x()) < WALK_SPEED)
+  if (m_crawl && on_ground() && std::abs(m_physic.get_velocity_x()) < WALK_SPEED * scale_factor)
   {
     if (m_controller->hold(Control::LEFT) && !m_controller->hold(Control::RIGHT))
     {
-      vx = -WALK_SPEED;
+      vx = -WALK_SPEED * scale_factor;
       m_dir = Direction::LEFT;
     }
     else if (m_controller->hold(Control::RIGHT) && !m_controller->hold(Control::LEFT))
     {
-      vx = WALK_SPEED;
+      vx = WALK_SPEED * scale_factor;
       m_dir = Direction::RIGHT;
     }
     else {
@@ -1264,30 +1266,30 @@ Player::handle_horizontal_input()
 
   // do not run if we're holding something which slows us down
   if ( m_grabbed_object && m_grabbed_object->is_hampering() ) {
-    ax = dirsign * WALK_ACCELERATION_X;
+    ax = dirsign * WALK_ACCELERATION_X * scale_factor;
     // limit speed
-    if (vx >= MAX_WALK_XM && dirsign > 0) {
+    if (vx >= MAX_WALK_XM * scale_factor && dirsign > 0) {
       ax = std::min(ax, -OVERSPEED_DECELERATION);
-    } else if (vx <= -MAX_WALK_XM && dirsign < 0) {
+    } else if (vx <= -MAX_WALK_XM * scale_factor && dirsign < 0) {
       ax = std::max(ax, OVERSPEED_DECELERATION);
     }
   } else {
-    if ( vx * dirsign < MAX_WALK_XM ) {
-      ax = dirsign * WALK_ACCELERATION_X;
+    if ( vx * dirsign < MAX_WALK_XM * scale_factor ) {
+      ax = dirsign * WALK_ACCELERATION_X * scale_factor;
     } else {
-      ax = dirsign * RUN_ACCELERATION_X;
+      ax = dirsign * RUN_ACCELERATION_X * scale_factor;
     }
     // limit speed
-    if (vx >= MAX_RUN_XM + BONUS_RUN_XM *((get_bonus() == BONUS_AIR) ? 1 : 0)) {
+    if (vx >= (MAX_RUN_XM + BONUS_RUN_XM *((get_bonus() == BONUS_AIR) ? 1 : 0)) * scale_factor) {
       ax = std::min(ax, -OVERSPEED_DECELERATION);
-    } else if (vx <= -MAX_RUN_XM - BONUS_RUN_XM * ((get_bonus() == BONUS_AIR) ? 1 : 0)) {
+    } else if (vx <= (-MAX_RUN_XM - BONUS_RUN_XM * ((get_bonus() == BONUS_AIR) ? 1 : 0)) * scale_factor) {
       ax = std::max(ax, OVERSPEED_DECELERATION);
     }
   }
 
   // we can reach WALK_SPEED without any acceleration
-  if (dirsign != 0 && fabsf(vx) < WALK_SPEED) {
-    vx = dirsign * WALK_SPEED;
+  if (dirsign != 0 && fabsf(vx) < WALK_SPEED * scale_factor) {
+    vx = dirsign * WALK_SPEED * scale_factor;
   }
 
   //Check speedlimit.
@@ -1300,7 +1302,7 @@ Player::handle_horizontal_input()
   if ((vx < 0 && dirsign >0) || (vx>0 && dirsign<0)) {
     if (on_ground()) {
       // let's skid!
-      if (fabsf(vx)>SKID_XM && !m_skidding_timer.started()) {
+      if (fabsf(vx) > SKID_XM * scale_factor && !m_skidding_timer.started()) {
         m_skidding_timer.start(SKID_TIME);
         SoundManager::current()->play("sounds/skid.wav", get_pos());
         // dust some particles
@@ -1434,6 +1436,8 @@ void
 Player::do_jump(float yspeed) {
   if (!m_can_walljump && !on_ground() && !m_coyote_timer.started())
     return;
+
+  yspeed *= get_scale_factor();
 
   // jump only if it would make Tux go faster upwards
   if (m_can_walljump || m_physic.get_velocity_y() > yspeed) {
@@ -1801,14 +1805,20 @@ Player::handle_input()
   }
 
   if (m_controller->pressed(Control::SCALE_UP)) {
+    float old_scale = m_scale;
     m_scale += 0.1f;
     if (m_scale > 2.0f) m_scale = 2.0f;
-    adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+    if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
+      m_scale = old_scale;
+    }
   }
   if (m_controller->pressed(Control::SCALE_DOWN)) {
+    float old_scale = m_scale;
     m_scale -= 0.1f;
     if (m_scale < 0.5f) m_scale = 0.5f;
-    adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+    if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
+      m_scale = old_scale;
+    }
   }
 }
 
@@ -2691,6 +2701,18 @@ Player::check_bounds()
       && !m_temp_safety_timer.started()) {
     kill(true);
     return;
+  }
+}
+
+float
+Player::get_scale_factor() const
+{
+  if (m_scale <= 1.0f) {
+    // 0.5 -> 1.5, 1.0 -> 1.0
+    return 2.0f - m_scale;
+  } else {
+    // 1.0 -> 1.0, 2.0 -> 0.7
+    return 1.3f - 0.3f * m_scale;
   }
 }
 

@@ -499,6 +499,9 @@ private:
 
   void check_bounds();
 
+  /** returns a factor based on Tux's current scale for jump and speed adjustments */
+  float get_scale_factor() const;
+
   /**
    * Ungrabs the currently grabbed object, if any. Only call with its argument
    * from an ObjectRemoveListener.
