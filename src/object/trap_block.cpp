@@ -31,27 +31,59 @@ TrapBlock::TrapBlock(const ReaderMapping& reader) :
 
 
 void
-TrapBlock::hit(Player& )
+TrapBlock::hit(Player& player)
 {
   // 한 번 작동된 트랩 블록은 더 이상 작동하지 않음
   if (m_is_triggered) return;
 
   m_is_triggered = true;
-  start_bounce(nullptr); // 블록이 위로 튀어오르는 애니메이션 효과
+  start_bounce(&player); // 블록이 튀어오르는 애니메이션 효과
   
   // 시각 및 청각 효과 처리 (벽돌 깨지는 소리와 붉은색 파티클 이펙트)
   SoundManager::current()->play("sounds/brick.wav", get_pos());
   Sector::get().add<Particles>(get_pos() + Vector(16, 16), 0.0f, 360.0f, 100.0f, 200.0f, Vector(0, 300), 10, Color(1.0f, 0, 0), 3, 1.0f, LAYER_OBJECTS + 1);
 
-  // 무작위 적 스폰
-  spawn_random_badguy();
+  // 스폰 방향 결정
+  bool downward = false;
+  if (player.m_does_buttjump) {
+    // 블록 아래쪽 공간이 비어있는지 확인
+    Rectf space_below;
+    space_below.set_left(m_col.m_bbox.get_left() + 1);
+    space_below.set_top(m_col.m_bbox.get_bottom() + 1);
+    space_below.set_right(m_col.m_bbox.get_right() - 1);
+    space_below.set_bottom(space_below.get_top() + 30);
+
+    if (Sector::get().is_free_of_statics(space_below, this, true)) {
+      downward = true;
+    }
+  }
+
+  // 결정된 방향으로 무작위 적 스폰
+  spawn_random_badguy(downward);
   
   // 타격 후 비어있는 블록의 모습으로 변경
   set_action("empty");
 }
 
+HitResponse
+TrapBlock::collision(MovingObject& other, const CollisionHit& hit_)
+{
+  if (hit_.has_direction()) {
+    auto player = dynamic_cast<Player*> (&other);
+    if (player) {
+      // 일반 보너스 블록과 동일하게 큰 Tux가 위에서 내려찍을 때(buttjump) 작동
+      if (player->m_does_buttjump)
+      {
+        hit(*player);
+      }
+    }
+  }
+
+  return Block::collision(other, hit_);
+}
+
 void
-TrapBlock::spawn_random_badguy()
+TrapBlock::spawn_random_badguy(bool downward)
 {
   // 현재 섹터에 스폰 가능한 모든 적들의 목록을 가져옴
   std::vector<std::string> all_badguys = Sector::get().get_spawnable_badguys_list();
@@ -77,19 +109,18 @@ TrapBlock::spawn_random_badguy()
   std::string badguy_name = m_available_badguys[index];
 
   try {
-    // 트랩 블록의 32픽셀 위쪽에서 적을 스폰
-    auto badguy = GameObjectFactory::instance().create(badguy_name, get_pos() + Vector(0, -32));
+    // 스폰 위치 및 초기 속도 설정
+    Vector spawn_pos = get_pos() + (downward ? Vector(0, 32) : Vector(0, -32));
+    float initial_vy = downward ? 300.0f : -300.0f;
+
+    auto badguy = GameObjectFactory::instance().create(badguy_name, spawn_pos);
     BadGuy* bg = dynamic_cast<BadGuy*>(badguy.get());
     if (bg) {
-       // 적이 위로 튀어오르듯 스폰되도록 초기 수직 속도 설정
-       bg->get_physic().set_velocity_y(-300);
+       // 적이 선택된 방향으로 튀어나오도록 초기 수직 속도 설정
+       bg->get_physic().set_velocity_y(initial_vy);
     }
     Sector::get().add_object(std::move(badguy));
   } catch (std::exception& e) {
     // log error if needed
   }
 }
-
-
-
-
