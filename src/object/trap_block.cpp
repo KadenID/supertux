@@ -38,15 +38,15 @@ TrapBlock::hit(Player& player)
 
   m_is_triggered = true;
   start_bounce(&player); // 블록이 튀어오르는 애니메이션 효과
-  
+
   // 시각 및 청각 효과 처리 (벽돌 깨지는 소리와 붉은색 파티클 이펙트)
   SoundManager::current()->play("sounds/brick.wav", get_pos());
   Sector::get().add<Particles>(get_pos() + Vector(16, 16), 0.0f, 360.0f, 100.0f, 200.0f, Vector(0, 300), 10, Color(1.0f, 0, 0), 3, 1.0f, LAYER_OBJECTS + 1);
 
-  // 스폰 방향 결정
+  // 스폰 방향 결정: 엉덩이 찍기(buttjump) 중이거나, 플레이어의 하단이 블록의 중간보다 위에 있다면(위에서 덮치는 경우) 아래로 스폰 시도
   bool downward = false;
-  if (player.m_does_buttjump) {
-    // 블록 아래쪽 공간이 비어있는지 확인
+  if (player.m_does_buttjump || (player.get_bbox().get_bottom() < get_pos().y + 16.f)) {
+    // 블록 아래쪽 공간이 비어있는지 확인 (BonusBlock::try_drop과 동일한 방식으로 판정 영역 축소)
     Rectf space_below;
     space_below.set_left(m_col.m_bbox.get_left() + 1);
     space_below.set_top(m_col.m_bbox.get_bottom() + 1);
@@ -60,7 +60,7 @@ TrapBlock::hit(Player& player)
 
   // 결정된 방향으로 무작위 적 스폰
   spawn_random_badguy(downward);
-  
+
   // 타격 후 비어있는 블록의 모습으로 변경
   set_action("empty");
 }
