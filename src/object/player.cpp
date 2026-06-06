@@ -509,8 +509,11 @@ Player::update(float dt_sec)
 
     if ((m_swimming || m_water_jump) && is_big())
     {
-      m_col.set_size(TUX_WIDTH, TUX_WIDTH);
-      adjust_height(TUX_WIDTH);
+      if (std::abs(m_col.m_bbox.get_height() - TUX_WIDTH * m_scale) > 0.1f)
+      {
+        m_col.set_size(TUX_WIDTH * m_scale, TUX_WIDTH);
+        adjust_height(TUX_WIDTH);
+      }
     }
 
     Rectf swim_here_box = get_bbox();
@@ -1059,6 +1062,8 @@ Player::handle_input_swimming()
 void
 Player::swim(float pointx, float pointy, bool boost)
 {
+    float scale_factor = get_scale_factor();
+
     if (m_swimming)
       m_physic.set_gravity_modifier(.0f);
 
@@ -1093,16 +1098,17 @@ Player::swim(float pointx, float pointy, bool boost)
       if(is_ang_defined && std::abs(delta) < 0.01f)
         m_swimming_angle = pointed_angle;
 
-      m_swimming_accel_modifier = is_ang_defined ? 600.f : 0.f;
+      // 수영 추진력 가속도에 스케일 보정치 적용
+      m_swimming_accel_modifier = is_ang_defined ? 600.f * scale_factor : 0.f;
       Vector swimming_direction = math::vec2_from_polar(m_swimming_accel_modifier, pointed_angle);
 
       m_physic.set_acceleration_x((swimming_direction.x - 1.0f * vx) * 2.f);
       m_physic.set_acceleration_y((swimming_direction.y - 1.0f * vy) * 2.f);
 
-      // Limit speed, if you go above this speed your acceleration is set to opposite (?)
-      if (glm::length(m_physic.get_velocity()) > SWIM_SPEED)
+      // 최대 수영 속도 제한에 스케일 보정치 적용
+      if (glm::length(m_physic.get_velocity()) > SWIM_SPEED * scale_factor)
       {
-        m_physic.set_acceleration(-vx,-vy);   // Was too lazy to set it properly ~~zwatotem
+        m_physic.set_acceleration(-vx,-vy);
       }
 
       // Natural friction
@@ -1112,29 +1118,29 @@ Player::swim(float pointx, float pointy, bool boost)
       }
 
       //not boosting? let's slow this penguin down!!!
-      if (!boost && is_ang_defined && glm::length(m_physic.get_velocity()) > (SWIM_SPEED + 10.f))
+      if (!boost && is_ang_defined && glm::length(m_physic.get_velocity()) > (SWIM_SPEED * scale_factor + 10.f))
       {
         m_physic.set_acceleration(-5.f*vx, -5.f*vy);
       }
 
       // Snapping to prevent unwanted floating
-        if (!is_ang_defined && glm::length(Vector(vx,vy)) < 100.f)
+        if (!is_ang_defined && glm::length(Vector(vx,vy)) < 100.f * scale_factor)
       {
         vx = 0;
         vy = 0;
       }
 
       // Turbo, using pointsign
-      float minboostspeed = 100.f;
+      float minboostspeed = 100.f * scale_factor;
       if (boost && glm::length(m_physic.get_velocity()) > minboostspeed)
       {
-        if (glm::length(m_physic.get_velocity()) < SWIM_BOOST_SPEED)
+        if (glm::length(m_physic.get_velocity()) < SWIM_BOOST_SPEED * scale_factor)
         {
           m_swimboosting = true;
           if (is_ang_defined)
           {
-            vx += SWIM_TO_BOOST_ACCEL * pointx;
-            vy += SWIM_TO_BOOST_ACCEL * pointy;
+            vx += SWIM_TO_BOOST_ACCEL * scale_factor * pointx;
+            vy += SWIM_TO_BOOST_ACCEL * scale_factor * pointy;
           }
         }
         else
@@ -1146,7 +1152,7 @@ Player::swim(float pointx, float pointy, bool boost)
       }
       else
       {
-          if (glm::length(m_physic.get_velocity()) < (SWIM_SPEED + 10.f))
+          if (glm::length(m_physic.get_velocity()) < (SWIM_SPEED * scale_factor + 10.f))
         {
           m_swimboosting = false;
         }
@@ -1809,8 +1815,10 @@ Player::handle_input()
     float old_scale = m_scale;
     m_scale += 0.1f;
     if (m_scale > 2.0f) m_scale = 2.0f;
-    // 크기가 커질 때 머리 위가 막혀 있는지 확인
-    if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
+    
+    // 수영 중일 때는 수영 전용 높이(TUX_WIDTH)를 사용하고, 그 외에는 상태별 높이를 기준으로 머리 위 공간 확인
+    float target_h = m_swimming ? TUX_WIDTH : (m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+    if (!adjust_height(target_h)) {
       // 막혀 있다면 스케일 변경을 취소하고 이전 값으로 복구 (바닥 뚫림 방지)
       m_scale = old_scale;
     }
@@ -1819,8 +1827,10 @@ Player::handle_input()
     float old_scale = m_scale;
     m_scale -= 0.1f;
     if (m_scale < 0.5f) m_scale = 0.5f;
-    // 크기가 작아질 때 히트박스 조정 시도
-    if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
+
+    // 수영 여부에 따른 적절한 목표 높이 설정
+    float target_h = m_swimming ? TUX_WIDTH : (m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT));
+    if (!adjust_height(target_h)) {
       m_scale = old_scale;
     }
   }
