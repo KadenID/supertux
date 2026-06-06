@@ -46,6 +46,7 @@ enum class Control {
   PEEK_UP,
   PEEK_DOWN,
 
+  // Tux의 렌더링 및 물리적 크기를 조절하는 컨트롤
   SCALE_UP,
   SCALE_DOWN,
 

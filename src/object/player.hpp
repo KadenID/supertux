@@ -499,7 +499,8 @@ private:
 
   void check_bounds();
 
-  /** returns a factor based on Tux's current scale for jump and speed adjustments */
+  /** Tux의 현재 스케일에 따라 점프력 및 이동 속도 보정치를 반환.
+   *  0.5배: 1.5배 보정 / 1.0배: 1.0배 보정 / 2.0배: 0.7배 보정 */
   float get_scale_factor() const;
 
   /**
@@ -653,7 +654,7 @@ private:
   bool m_is_slidejump_falling;
   bool m_was_crawling_before_slide;
 
-  float m_scale;
+  float m_scale; // Tux의 시각적 및 물리적 크기를 결정하는 스케일 배율 (기본값: 1.0)
 
 private:
   Player(const Player&) = delete;

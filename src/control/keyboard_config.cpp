@@ -67,10 +67,12 @@ KeyboardConfig::KeyboardConfig() :
   m_keymap[SDL_SCANCODE_F1]        = {0, Control::CHEAT_MENU};
   m_keymap[SDL_SCANCODE_F2]        = {0, Control::DEBUG_MENU};
   m_keymap[SDL_SCANCODE_BACKSPACE] = {0, Control::REMOVE};
-  m_keymap[SDL_SCANCODE_EQUALS]    = {0, Control::SCALE_UP};
-  m_keymap[SDL_SCANCODE_MINUS]     = {0, Control::SCALE_DOWN};
-  m_keymap[SDL_SCANCODE_KP_PLUS]   = {0, Control::SCALE_UP};
-  m_keymap[SDL_SCANCODE_KP_MINUS]  = {0, Control::SCALE_DOWN};
+  
+  // Tux 크기 조절 키 바인딩 (일반 키보드 및 숫자 패드의 +/- 기호)
+  m_keymap[SDL_SCANCODE_EQUALS]    = {0, Control::SCALE_UP};    // '=' 키 ('+' 키)
+  m_keymap[SDL_SCANCODE_MINUS]     = {0, Control::SCALE_DOWN};  // '-' 키
+  m_keymap[SDL_SCANCODE_KP_PLUS]   = {0, Control::SCALE_UP};    // 숫자 패드의 '+' 키
+  m_keymap[SDL_SCANCODE_KP_MINUS]  = {0, Control::SCALE_DOWN};  // 숫자 패드의 '-' 키
 }
 
 void

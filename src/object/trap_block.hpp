@@ -20,6 +20,8 @@ public:
   TrapBlock(const Vector& pos);
   TrapBlock(const ReaderMapping& reader);
 
+  // 플레이어가 아래에서 블록을 쳤을 때 호출되는 메서드
+  // 일반적인 아이템 대신 적을 소환.
   virtual void hit(Player& player) override;
   
   static std::string class_name() { return "trapblock"; }
@@ -28,9 +30,10 @@ public:
   virtual GameObjectClasses get_class_types() const override { return Block::get_class_types().add(typeid(TrapBlock)); }
 
 private:
+  // 스폰 가능한 적 목록 중 특정 적들을 제외한 무작위 적을 소환하는 헬퍼 메서드
   void spawn_random_badguy();
 
 private:
-  std::vector<std::string> m_available_badguys;
-  bool m_is_triggered;
+  std::vector<std::string> m_available_badguys; // 소환 가능한 적들의 이름 목록
+  bool m_is_triggered; // 블록이 이미 작동했는지 확인하는 플래그 (한 번만 작동하도록)
 };

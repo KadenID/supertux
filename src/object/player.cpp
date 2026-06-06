@@ -1437,6 +1437,7 @@ Player::do_jump(float yspeed) {
   if (!m_can_walljump && !on_ground() && !m_coyote_timer.started())
     return;
 
+  // Tux의 현재 크기에 맞춰 점프력을 보정.
   yspeed *= get_scale_factor();
 
   // jump only if it would make Tux go faster upwards
@@ -1808,7 +1809,9 @@ Player::handle_input()
     float old_scale = m_scale;
     m_scale += 0.1f;
     if (m_scale > 2.0f) m_scale = 2.0f;
+    // 크기가 커질 때 머리 위가 막혀 있는지 확인
     if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
+      // 막혀 있다면 스케일 변경을 취소하고 이전 값으로 복구 (바닥 뚫림 방지)
       m_scale = old_scale;
     }
   }
@@ -1816,6 +1819,7 @@ Player::handle_input()
     float old_scale = m_scale;
     m_scale -= 0.1f;
     if (m_scale < 0.5f) m_scale = 0.5f;
+    // 크기가 작아질 때 히트박스 조정 시도
     if (!adjust_height(m_duck ? DUCKED_TUX_HEIGHT : (is_big() ? BIG_TUX_HEIGHT : SMALL_TUX_HEIGHT))) {
       m_scale = old_scale;
     }
@@ -2349,7 +2353,10 @@ Player::draw(DrawingContext& context)
   else {
     context.push_transform();
     Vector translation = context.get_translation();
+    
+    // 현재 스케일에 맞춰 렌더링 위치를 중앙 기준으로 보정
     context.set_translation(draw_pos - (draw_pos - translation) / m_scale);
+    // m_scale 값에 따라 Tux의 시각적 크기를 확대 또는 축소
     context.scale(m_scale);
 
     if (m_dying)
@@ -2707,11 +2714,12 @@ Player::check_bounds()
 float
 Player::get_scale_factor() const
 {
+  // Tux의 현재 스케일에 맞춰 물리 법칙(속도, 점프력) 보정치를 계산.
   if (m_scale <= 1.0f) {
-    // 0.5 -> 1.5, 1.0 -> 1.0
+    // 0.5배(보정치 1.5) ~ 1.0배(보정치 1.0) 사이 계산
     return 2.0f - m_scale;
   } else {
-    // 1.0 -> 1.0, 2.0 -> 0.7
+    // 1.0배(보정치 1.0) ~ 2.0배(보정치 0.7) 사이 계산
     return 1.3f - 0.3f * m_scale;
   }
 }
